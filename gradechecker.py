@@ -5,6 +5,26 @@ from dotenv import load_dotenv
 import os
 from litellm import completion
 
+def show_spinner():
+    import itertools
+    import threading
+    import sys
+    import time
+
+    spinner = itertools.cycle(['-', '/', '|', '\\'])
+    stop_spinner = False
+
+    def spin():
+        while not stop_spinner:
+            sys.stdout.write(next(spinner))  # Write the next character
+            sys.stdout.flush()               # Flush stdout buffer
+            sys.stdout.write('\b')           # Move cursor back
+            time.sleep(0.1)
+
+    spinner_thread = threading.Thread(target=spin)
+    spinner_thread.start()
+    return stop_spinner, spinner_thread
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -113,6 +133,9 @@ if __name__ == "__main__":
     credentials = get_credentials()
     
     try:
+        print("Starting grade check...")
+        stop_spinner, spinner_thread = show_spinner()
+        
         # Get assignments first
         login_to_website(**credentials)
         
@@ -120,9 +143,20 @@ if __name__ == "__main__":
         with open('assignments.txt', 'r') as f:
             assignments_content = f.read()
         
+        print("\nProcessing assignments...")
+        
         # Process assignments through LLM
         analysis = invoke_llm(assignments_content)
+        
+        # Stop the spinner
+        stop_spinner = True
+        spinner_thread.join()
+        
+        print("\nAnalysis complete!")
         print(analysis)
         
     except Exception as e:
-        print(f"Error: {str(e)}")
+        # Ensure spinner stops on error
+        stop_spinner = True
+        spinner_thread.join()
+        print(f"\nError: {str(e)}")
