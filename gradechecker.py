@@ -43,11 +43,11 @@ def login_to_website(url, username, password):
         # Login
         write(username, into="User Name")
         write(password, into="Password")
-        click("Sign In")
+        helium_click("Sign In")
         
         # Wait for login to complete
         wait_until(Link("Classes").exists)
-        click("Classes")
+        helium_click("Classes")
         
         # Wait for iframe to load
         wait_until(S("#sg-legacy-iframe").exists)
