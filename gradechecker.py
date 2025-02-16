@@ -1,6 +1,6 @@
-import click
+import click as click_cli
 import sys
-from helium import S, start_chrome, wait_until, write, click, Link, kill_browser, get_driver
+from helium import S, start_chrome, wait_until, write, click as helium_click, Link, kill_browser, get_driver
 from selenium.webdriver.common.by import By
 import time
 from dotenv import load_dotenv
@@ -125,8 +125,8 @@ def invoke_llm(assignments_content):
     except Exception as e:
         return f"Error processing assignments: {str(e)}"
 
-@click.command()
-@click.option('--local', is_flag=True, help='Use local assignments.txt instead of scraping website')
+@click_cli.command()
+@click_cli.option('--local', is_flag=True, help='Use local assignments.txt instead of scraping website')
 def cli(local):
     """Grade Checker Application"""
     try:
