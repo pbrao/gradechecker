@@ -89,28 +89,34 @@ def invoke_llm(assignments_content):
     # Prepare the prompt
     prompt = f"""
     Analyze this student's assignments and grades. Focus on:
-    1. Missing assignments (marked with 'M - Missing')
+    1. Missing assignments (marked with 'M - Missing' or a '0.00' grade)
     2. Class grades below 80%
+    3. Class grades above 80%
     
     Here is the data:
     {cleaned_content[:10000]}
     
     Provide:
     - Summary of key issues
-        -- Aggregation of missing assignments
-        -- Aggregation of class assignment grades that are less than 80%
-    - Table of missing assignments with formatted spacing to look like a table
+        -- Number of missing assignments
+        -- Number of class assignment grades that are less than 80%
+    - Table of all of the missing assignments with formatted spacing to look like a table
         -- Course Name
         -- Assignment
         -- Due Date
-        -- Sort by Due Date from oldest to newest
+        -- Sort by Due Date from the newest date to the oldest date
     - Table of low class grades with formatted spacing to look like a table
+        -- Course Name
+        -- Current Grade
+        -- Sort by Current Grade from lowest to highest
+    - Table other class grade above 80% with formatted spacing to look like a table
         -- Course Name
         -- Current Grade
         -- Sort by Current Grade from lowest to highest
     
     Keep the response concise and focused.
     The response should be in HTML format that includes headings, numbered lists, bullet points so that it is easy to read.
+    Only include the analysis.
     """
 
     try:
