@@ -71,12 +71,58 @@ def main():
     except Exception as e:
         print(f"Login failed: {str(e)}")
 
-def invoke_llm():
-    response = completion(model="gemini/gemini-pro", messages=[{"role": "user", "content": "write me a poem about flowers in the style of baudelaire"}])
-    content = response.get('choices', [{}])[0].get('message', {}).get('content')
+def invoke_llm(assignments_content):
+    # Prepare the prompt
+    prompt = f"""
+    You are an expert academic assistant. Analyze the following student assignments and grades:
+    
+    {assignments_content}
+    
+    Your task:
+    1. Identify all missing assignments
+    2. Identify all class grades below 80%
+    3. Provide a detailed explanation of the findings
+    4. Create a tabular breakdown with:
+       - Class name
+       - Missing assignments (if any)
+       - Current grade
+       - Recommended actions
+    
+    Format your response as follows:
+    
+    [Summary Explanation]
+    <detailed explanation here>
+    
+    [Grade Breakdown]
+    | Class Name       | Missing Assignments | Current Grade | Recommended Actions |
+    |------------------|---------------------|---------------|---------------------|
+    | <class name>     | <missing>           | <grade>       | <actions>           |
+    | <class name>     | <missing>           | <grade>       | <actions>           |
+    """
 
-    return content
+    # Send to LLM
+    response = completion(
+        model="gemini/gemini-pro",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    # Extract and return the content
+    return response.get('choices', [{}])[0].get('message', {}).get('content')
 
 if __name__ == "__main__":
-    #main()
-    print(invoke_llm())
+    credentials = get_credentials()
+    
+    try:
+        # Get assignments first
+        login_to_website(**credentials)
+        
+        # Read the saved assignments
+        with open('assignments.txt', 'r') as f:
+            assignments_content = f.read()
+        
+        # Process assignments through LLM
+        analysis = invoke_llm(assignments_content)
+        print(analysis)
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
