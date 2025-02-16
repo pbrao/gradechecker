@@ -125,7 +125,7 @@ def invoke_llm(assignments_content):
 
     # Send to LLM
     response = completion(
-        model="gemini/gemini-1.5-pro-latest",
+        model="gemini/gemini-pro",
         messages=[{"role": "user", "content": prompt}]
     )
     
