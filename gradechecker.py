@@ -1,4 +1,4 @@
-import argparse
+import click
 import sys
 from helium import S, start_chrome, wait_until, write, click, Link, kill_browser, get_driver
 from selenium.webdriver.common.by import By
@@ -125,17 +125,14 @@ def invoke_llm(assignments_content):
     except Exception as e:
         return f"Error processing assignments: {str(e)}"
 
-if __name__ == "__main__":
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description="Grade Checker Application")
-    parser.add_argument('--local', action='store_true', 
-                       help='Use local assignments.txt instead of scraping website')
-    args = parser.parse_args()
-
+@click.command()
+@click.option('--local', is_flag=True, help='Use local assignments.txt instead of scraping website')
+def cli(local):
+    """Grade Checker Application"""
     try:
         print("Starting grade check...")
         
-        if not args.local:
+        if not local:
             print("Scraping website for assignments...")
             credentials = get_credentials()
             login_to_website(**credentials)
@@ -161,3 +158,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nError: {str(e)}")
         sys.exit(1)  # Exit with error
+
+if __name__ == "__main__":
+    cli()
