@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 import time
 from dotenv import load_dotenv
 import os
+from litellm import completion
 
 # Load environment variables from .env file
 load_dotenv()
@@ -30,7 +31,7 @@ def get_credentials():
 
 def login_to_website(url, username, password):
     # Start browser and go to URL
-    start_chrome(url, headless=False)
+    start_chrome(url, headless=True)
     
     # Wait for page to load
     wait_until(S("body").exists)
@@ -70,5 +71,12 @@ def main():
     except Exception as e:
         print(f"Login failed: {str(e)}")
 
+def invoke_llm():
+    response = completion(model="gemini/gemini-pro", messages=[{"role": "user", "content": "write me a poem about flowers in the style of baudelaire"}])
+    content = response.get('choices', [{}])[0].get('message', {}).get('content')
+
+    return content
+
 if __name__ == "__main__":
-    main()
+    #main()
+    print(invoke_llm())
