@@ -129,23 +129,28 @@ def invoke_llm(assignments_content):
         return f"Error processing assignments: {str(e)}"
 
 def send_email(analysis):
-    """Sends the analysis via email with HTML content."""
+    """Sends the analysis via email with HTML content to multiple recipients."""
     sender_email = os.getenv('GMAIL_SENDER')
     sender_password = os.getenv('GMAIL_APP_PASSWORD')
-    receiver_email = os.getenv('GMAIL_RECEIVERS')
+    receiver_emails = [email.strip() for email in os.getenv('GMAIL_RECEIVERS').split(',')]
     subject = "Grade Analysis Report"
     
     # Create message as MIMEText with HTML content
-    msg = MIMEText(analysis, 'html')  # Changed from plain text to HTML
+    msg = MIMEText(analysis, 'html')
     msg['Subject'] = subject
     msg['From'] = sender_email
-    msg['To'] = receiver_email
+    msg['To'] = ', '.join(receiver_emails)  # Join all recipients with commas
 
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(sender_email, sender_password)
-            server.send_message(msg)
-            print("Email sent successfully!")
+            # Send to all recipients
+            server.sendmail(
+                sender_email,
+                receiver_emails,  # Pass list of recipients
+                msg.as_string()
+            )
+            print(f"Email sent successfully to {len(receiver_emails)} recipients!")
     except Exception as e:
         print(f"Error sending email: {e}")
 
