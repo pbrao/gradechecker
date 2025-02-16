@@ -83,31 +83,40 @@ def invoke_llm(assignments_content):
         if line.strip() and not line.startswith("Timestamp:")
     ])
     
-    # Prepare the prompt with a more structured format
+    # Prepare the prompt
     prompt = f"""
-    Analyze the following student assignments and grades. Focus on:
+    Analyze this student's assignments and grades. Focus on:
     1. Missing assignments (marked with 'M - Missing')
-    2. Grades below 80%
-    3. Current cycle averages
+    2. Class grades below 80%
     
     Here is the data:
-    {cleaned_content[:10000]}  # Limit to first 10k characters to prevent timeouts
+    {cleaned_content[:10000]}
     
     Provide:
     - Summary of key issues
-    - Table of missing assignments
-    - Table of low grades
-    - Recommended actions
+        -- Aggregation of missing assignments
+        -- Aggregation of class assignment grades that are less than 80%
+    - Table of missing assignments with formatted spacing to look like a table
+        -- Course Name
+        -- Assignment
+        -- Due Date
+        -- Sort by Due Date from oldest to newest
+    - Table of low class grades with formatted spacing to look like a table
+        -- Course Name
+        -- Current Grade
+        -- Sort by Current Grade from lowest to highest
     
     Keep the response concise and focused.
     """
 
     try:
-        # Send to LLM with timeout
+        # Send to Claude with timeout via LiteLLM
         response = completion(
-            model="gemini/gemini/gemini-2.0-flash-exp",
+            model="anthropic/claude-3-5-sonnet-20240620",
             messages=[{"role": "user", "content": prompt}],
-            timeout=30  # Add timeout to prevent hanging
+            timeout=30,
+            max_tokens=1500,
+            temperature=0
         )
         
         # Extract and return the content
