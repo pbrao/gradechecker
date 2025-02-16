@@ -1,4 +1,5 @@
 import argparse
+import sys
 from helium import S, start_chrome, wait_until, write, click, Link, kill_browser, get_driver
 from selenium.webdriver.common.by import By
 import time
@@ -141,6 +142,9 @@ if __name__ == "__main__":
                        help='Use local assignments.txt instead of scraping website')
     args = parser.parse_args()
 
+    stop_spinner = False
+    spinner_thread = None
+
     try:
         print("Starting grade check...")
         stop_spinner, spinner_thread = show_spinner()
@@ -159,14 +163,22 @@ if __name__ == "__main__":
         # Process assignments through LLM with timeout
         try:
             analysis = invoke_llm(assignments_content)
+            # Stop spinner before printing results
+            stop_spinner = True
+            spinner_thread.join()
             print("\nAnalysis complete!")
             print(analysis)
+            sys.exit(0)  # Exit successfully
         except Exception as e:
+            # Stop spinner before printing error
+            stop_spinner = True
+            spinner_thread.join()
             print(f"\nError during analysis: {str(e)}")
+            sys.exit(1)  # Exit with error
         
     except Exception as e:
+        if spinner_thread:
+            stop_spinner = True
+            spinner_thread.join()
         print(f"\nError: {str(e)}")
-    finally:
-        # Ensure spinner stops
-        stop_spinner = True
-        spinner_thread.join()
+        sys.exit(1)  # Exit with error
