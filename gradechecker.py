@@ -7,25 +7,6 @@ from dotenv import load_dotenv
 import os
 from litellm import completion
 
-def show_spinner():
-    import itertools
-    import threading
-    import sys
-    import time
-
-    spinner = itertools.cycle(['-', '/', '|', '\\'])
-    stop_spinner = False
-
-    def spin():
-        while not stop_spinner:
-            sys.stdout.write(next(spinner))  # Write the next character
-            sys.stdout.flush()               # Flush stdout buffer
-            sys.stdout.write('\b')           # Move cursor back
-            time.sleep(0.1)
-
-    spinner_thread = threading.Thread(target=spin)
-    spinner_thread.start()
-    return stop_spinner, spinner_thread
 
 # Load environment variables from .env file
 load_dotenv()
@@ -142,43 +123,32 @@ if __name__ == "__main__":
                        help='Use local assignments.txt instead of scraping website')
     args = parser.parse_args()
 
-    stop_spinner = False
-    spinner_thread = None
-
     try:
         print("Starting grade check...")
-        stop_spinner, spinner_thread = show_spinner()
         
         if not args.local:
-            # Full scraping mode
+            print("Scraping website for assignments...")
             credentials = get_credentials()
             login_to_website(**credentials)
+            print("Website scraping complete.")
+        else:
+            print("Using local assignments file...")
         
         # Read the saved assignments
+        print("Reading assignments file...")
         with open('assignments.txt', 'r') as f:
             assignments_content = f.read()
         
-        print("\nProcessing assignments...")
-        
-        # Process assignments through LLM with timeout
+        print("Sending assignments to LLM for analysis...")
         try:
             analysis = invoke_llm(assignments_content)
-            # Stop spinner before printing results
-            stop_spinner = True
-            spinner_thread.join()
             print("\nAnalysis complete!")
             print(analysis)
             sys.exit(0)  # Exit successfully
         except Exception as e:
-            # Stop spinner before printing error
-            stop_spinner = True
-            spinner_thread.join()
-            print(f"\nError during analysis: {str(e)}")
+            print(f"\nError during LLM analysis: {str(e)}")
             sys.exit(1)  # Exit with error
         
     except Exception as e:
-        if spinner_thread:
-            stop_spinner = True
-            spinner_thread.join()
         print(f"\nError: {str(e)}")
         sys.exit(1)  # Exit with error
