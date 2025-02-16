@@ -129,19 +129,20 @@ def invoke_llm(assignments_content):
         return f"Error processing assignments: {str(e)}"
 
 def send_email(analysis):
-    """Sends the analysis via email."""
+    """Sends the analysis via email with HTML content."""
     sender_email = os.getenv('GMAIL_SENDER')
     sender_password = os.getenv('GMAIL_APP_PASSWORD')
     receiver_email = os.getenv('GMAIL_RECEIVERS')
     subject = "Grade Analysis Report"
     
-    msg = MIMEText(analysis)  # Create the email message object
+    # Create message as MIMEText with HTML content
+    msg = MIMEText(analysis, 'html')  # Changed from plain text to HTML
     msg['Subject'] = subject
     msg['From'] = sender_email
     msg['To'] = receiver_email
 
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: # For Gmail SSL
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(sender_email, sender_password)
             server.send_message(msg)
             print("Email sent successfully!")
