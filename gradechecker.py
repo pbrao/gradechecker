@@ -109,6 +109,7 @@ def invoke_llm(assignments_content):
         -- Sort by Current Grade from lowest to highest
     
     Keep the response concise and focused.
+    The response should be in HTML format that includes headings, numbered lists, bullet points so that it is easy to read.
     """
 
     try:
