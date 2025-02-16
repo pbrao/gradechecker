@@ -1,3 +1,4 @@
+import argparse
 from helium import S, start_chrome, wait_until, write, click, Link, kill_browser, get_driver
 from selenium.webdriver.common.by import By
 import time
@@ -53,32 +54,34 @@ def login_to_website(url, username, password):
     # Start browser and go to URL
     start_chrome(url, headless=True)
     
-    # Wait for page to load
-    wait_until(S("body").exists)
-    
-    # Login
-    write(username, into="User Name")
-    write(password, into="Password")
-    click("Sign In")
-    
-    # Wait for login to complete
-    wait_until(Link("Classes").exists)
-    click("Classes")
-    
-    # Wait for iframe to load
-    wait_until(S("#sg-legacy-iframe").exists)
-    
-    # Switch to iframe
-    iframe = get_driver().find_element("id", "sg-legacy-iframe")
-    get_driver().switch_to.frame(iframe)
-    
-    # Extract and save assignments
-    assignments = extract_assignments()
-    save_assignments_to_file(assignments)
-    
-    # Switch back to default content
-    get_driver().switch_to.default_content()
-    kill_browser()
+    try:
+        # Wait for page to load
+        wait_until(S("body").exists)
+        
+        # Login
+        write(username, into="User Name")
+        write(password, into="Password")
+        click("Sign In")
+        
+        # Wait for login to complete
+        wait_until(Link("Classes").exists)
+        click("Classes")
+        
+        # Wait for iframe to load
+        wait_until(S("#sg-legacy-iframe").exists)
+        
+        # Switch to iframe
+        iframe = get_driver().find_element("id", "sg-legacy-iframe")
+        get_driver().switch_to.frame(iframe)
+        
+        # Extract and save assignments
+        assignments = extract_assignments()
+        save_assignments_to_file(assignments)
+        
+    finally:
+        # Switch back to default content
+        get_driver().switch_to.default_content()
+        kill_browser()
 
 
 def main():
@@ -130,14 +133,20 @@ def invoke_llm(assignments_content):
     return response.get('choices', [{}])[0].get('message', {}).get('content')
 
 if __name__ == "__main__":
-    credentials = get_credentials()
-    
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description="Grade Checker Application")
+    parser.add_argument('--local', action='store_true', 
+                       help='Use local assignments.txt instead of scraping website')
+    args = parser.parse_args()
+
     try:
         print("Starting grade check...")
         stop_spinner, spinner_thread = show_spinner()
         
-        # Get assignments first
-        login_to_website(**credentials)
+        if not args.local:
+            # Full scraping mode
+            credentials = get_credentials()
+            login_to_website(**credentials)
         
         # Read the saved assignments
         with open('assignments.txt', 'r') as f:
