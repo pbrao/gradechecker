@@ -1,5 +1,7 @@
 import click as click_cli
 import sys
+import smtplib
+from email.mime.text import MIMEText
 from helium import S, start_chrome, wait_until, write, click as helium_click, Link, kill_browser, get_driver
 from selenium.webdriver.common.by import By
 import time
@@ -125,9 +127,30 @@ def invoke_llm(assignments_content):
     except Exception as e:
         return f"Error processing assignments: {str(e)}"
 
+def send_email(analysis):
+    """Sends the analysis via email."""
+    sender_email = os.getenv('GMAIL_SENDER')
+    sender_password = os.getenv('GMAIL_APP_PASSWORD')
+    receiver_email = os.getenv('GMAIL_RECEIVERS')
+    subject = "Grade Analysis Report"
+    
+    msg = MIMEText(analysis)  # Create the email message object
+    msg['Subject'] = subject
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server: # For Gmail SSL
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+            print("Email sent successfully!")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
 @click_cli.command()
 @click_cli.option('--local', is_flag=True, help='Use local assignments.txt instead of scraping website')
-def cli(local):
+@click_cli.option('--email', is_flag=True, help='Send analysis via email')
+def cli(local, email):
     """Grade Checker Application"""
     try:
         print("Starting grade check...")
@@ -150,6 +173,11 @@ def cli(local):
             analysis = invoke_llm(assignments_content)
             print("\nAnalysis complete!")
             print(analysis)
+            
+            if email:
+                print("\nSending analysis via email...")
+                send_email(analysis)
+            
             sys.exit(0)  # Exit successfully
         except Exception as e:
             print(f"\nError during LLM analysis: {str(e)}")
