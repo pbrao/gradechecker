@@ -95,42 +95,44 @@ def main():
         print(f"Login failed: {str(e)}")
 
 def invoke_llm(assignments_content):
-    # Prepare the prompt
+    # Clean and format the assignments content
+    cleaned_content = "\n".join([
+        line.strip() for line in assignments_content.splitlines() 
+        if line.strip() and not line.startswith("Timestamp:")
+    ])
+    
+    # Prepare the prompt with a more structured format
     prompt = f"""
-    You are an expert academic assistant. Analyze the following student assignments and grades:
+    Analyze the following student assignments and grades. Focus on:
+    1. Missing assignments (marked with 'M - Missing')
+    2. Grades below 80%
+    3. Current cycle averages
     
-    {assignments_content}
+    Here is the data:
+    {cleaned_content[:10000]}  # Limit to first 10k characters to prevent timeouts
     
-    Your task:
-    1. Identify all missing assignments
-    2. Identify all class grades below 80%
-    3. Provide a detailed explanation of the findings
-    4. Create a tabular breakdown with:
-       - Class name
-       - Missing assignments (if any)
-       - Current grade
-       - Recommended actions
+    Provide:
+    - Summary of key issues
+    - Table of missing assignments
+    - Table of low grades
+    - Recommended actions
     
-    Format your response as follows:
-    
-    [Summary Explanation]
-    <detailed explanation here>
-    
-    [Grade Breakdown]
-    | Class Name       | Missing Assignments | Current Grade | Recommended Actions |
-    |------------------|---------------------|---------------|---------------------|
-    | <class name>     | <missing>           | <grade>       | <actions>           |
-    | <class name>     | <missing>           | <grade>       | <actions>           |
+    Keep the response concise and focused.
     """
 
-    # Send to LLM
-    response = completion(
-        model="gemini/gemini-pro",
-        messages=[{"role": "user", "content": prompt}]
-    )
+    try:
+        # Send to LLM with timeout
+        response = completion(
+            model="gemini/gemini-pro",
+            messages=[{"role": "user", "content": prompt}],
+            timeout=30  # Add timeout to prevent hanging
+        )
+        
+        # Extract and return the content
+        return response.get('choices', [{}])[0].get('message', {}).get('content')
     
-    # Extract and return the content
-    return response.get('choices', [{}])[0].get('message', {}).get('content')
+    except Exception as e:
+        return f"Error processing assignments: {str(e)}"
 
 if __name__ == "__main__":
     # Set up argument parser
@@ -154,18 +156,17 @@ if __name__ == "__main__":
         
         print("\nProcessing assignments...")
         
-        # Process assignments through LLM
-        analysis = invoke_llm(assignments_content)
-        
-        # Stop the spinner
-        stop_spinner = True
-        spinner_thread.join()
-        
-        print("\nAnalysis complete!")
-        print(analysis)
+        # Process assignments through LLM with timeout
+        try:
+            analysis = invoke_llm(assignments_content)
+            print("\nAnalysis complete!")
+            print(analysis)
+        except Exception as e:
+            print(f"\nError during analysis: {str(e)}")
         
     except Exception as e:
-        # Ensure spinner stops on error
+        print(f"\nError: {str(e)}")
+    finally:
+        # Ensure spinner stops
         stop_spinner = True
         spinner_thread.join()
-        print(f"\nError: {str(e)}")
