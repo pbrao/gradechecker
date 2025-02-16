@@ -123,7 +123,7 @@ def invoke_llm(assignments_content):
     try:
         # Send to LLM with timeout
         response = completion(
-            model="gemini/gemini-pro",
+            model="gemini/gemini-1.5-pro-latest",
             messages=[{"role": "user", "content": prompt}],
             timeout=30  # Add timeout to prevent hanging
         )
