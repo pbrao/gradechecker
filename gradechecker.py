@@ -1,6 +1,7 @@
 import click as click_cli
 import sys
 import smtplib
+import time
 from email.mime.text import MIMEText
 from helium import S, start_chrome, wait_until, write, click as helium_click, Link, kill_browser, get_driver
 from selenium.webdriver.common.by import By
@@ -133,7 +134,10 @@ def send_email(analysis):
     sender_email = os.getenv('GMAIL_SENDER')
     sender_password = os.getenv('GMAIL_APP_PASSWORD')
     receiver_emails = [email.strip() for email in os.getenv('GMAIL_RECEIVERS').split(',')]
-    subject = "Grade Analysis Report"
+    
+    # Create subject with current date
+    current_date = time.strftime("%m/%d/%Y")
+    subject = f"Naina's Grades/Assignments - {current_date}"
     
     # Create message as MIMEText with HTML content
     msg = MIMEText(analysis, 'html')
