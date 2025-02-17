@@ -10,10 +10,14 @@ from dotenv import load_dotenv
 import os
 from litellm import completion
 from pydantic_ai import Agent
+import logfire
 
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Add logfire logging
+logfire.configure()
 
 
 def save_assignments_to_file(content):
@@ -90,41 +94,44 @@ def invoke_llm(assignments_content):
     # Prepare the prompt
     prompt = f"""
     Analyze this student's assignments and grades. Focus on:
-    1. Missing assignments (marked with 'M - Missing' or a '0.00' grade)
+    1. Missing assignments (marked with 'M - Missing' or a '0.00')
     2. Class grades below 80%
     3. Class grades above 80%
     
     Here is the data:
     {cleaned_content[:10000]}
     
-    Provide:
-    - Summary of key issues
-        -- Number of missing assignments
+    Provide the following sections:
+    - Summary of Key Issues
+        -- Number of missing assignments plus those with a 0.00 grade
         -- Number of class assignment grades that are less than 80%
-    - Table of all of the missing assignments with formatted spacing to look like a table
+    - Missing Assignments
+        -- Table of all of the missing assignments with formatted spacing to look like a table
         -- Course Name
         -- Assignment
         -- Due Date
         -- Sort by Due Date from the newest date to the oldest date
-    - Table of low class grades with formatted spacing to look like a table
+    - Low Class Grades (Below 80%) 
+        -- Table of overall course grades below 80% with formatted spacing to look like a table
         -- Course Name
         -- Current Grade
         -- Sort by Current Grade from lowest to highest
-    - Table other class grade above 80% with formatted spacing to look like a table
+    - Other Class Grades (Above 80%) 
+        -- Table of overall course grade above 80% with formatted spacing to look like a table
         -- Course Name
         -- Current Grade
         -- Sort by Current Grade from lowest to highest
     
     Keep the response concise and focused.
-    The response should be in HTML format that includes headings, numbered lists, bullet points so that it is easy to read.
-    Only include the analysis.
+    The response should be in HTML format that includes headings, bullet points, 
+    and tables with headings so that it is easy to read.
+    Only include the analysis within the start <html> and end <html> tags.
     """
     system_prompt = """
-    You are an expert in evaluating the grades and performance of high school students. You will provide an analysis of the 
-    student's grades and respond in HTML.
+    You are an expert in evaluating the grades and performance of high school students.
     """
-    agent = Agent('anthropic:claude-3-5-sonnet-latest', system_prompt=system_prompt, model_settings={'temperature': 0.0})
-
+    #agent = Agent('anthropic:claude-3-5-sonnet-latest', system_prompt=system_prompt, model_settings={'temperature': 0.0})
+    agent = Agent('gemini-2.0-flash-thinking-exp-01-21', system_prompt=system_prompt, model_settings={'temperature': 0.0})
     try:
         # Extract and return the content
         result = agent.run_sync(prompt)
