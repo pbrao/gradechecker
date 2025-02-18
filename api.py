@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 import os
 from pydantic_ai import Agent
 import logfire
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 
 # Load environment variables from .env file
@@ -129,14 +131,27 @@ def invoke_llm(assignments_content):
     system_prompt = """
     You are an expert in evaluating the grades and performance of high school students.
     """
-    #agent = Agent('anthropic:claude-3-5-sonnet-latest', system_prompt=system_prompt, model_settings={'temperature': 0.0})
-    agent = Agent('gemini-2.0-flash-thinking-exp-01-21', system_prompt=system_prompt, model_settings={'temperature': 0.0})
+    
     try:
-        # Extract and return the content
-        result = agent.run_sync(prompt)
+        # Create a new event loop in the current thread
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # Create agent and run synchronously
+        agent = Agent('gemini-2.0-flash-thinking-exp-01-21', system_prompt=system_prompt, model_settings={'temperature': 0.0})
+        
+        # Run in the event loop
+        result = loop.run_until_complete(agent.run(prompt))
+        loop.close()
+        
         return result.data
     except Exception as e:
         return f"Error processing assignments: {str(e)}"
+    finally:
+        try:
+            loop.close()
+        except:
+            pass
 
 def send_email(analysis):
     """Sends the analysis via email with HTML content to multiple recipients."""
