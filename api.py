@@ -12,7 +12,7 @@ load_dotenv()
 
 def save_assignments_to_file(content):
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    with open('assignments.txt', 'w', encoding='utf-8') as f:
+    with open('/app/data/assignments.txt', 'w', encoding='utf-8') as f:
         f.write(f"Timestamp: {timestamp}\n\n")
         for line in content:
             f.write(line + "\n")
@@ -90,7 +90,7 @@ def check_grades():
         
         # Read the saved assignments
         print("Reading assignments file...")
-        with open('assignments.txt', 'r') as f:
+        with open('/app/data/assignments.txt', 'r') as f:
             assignments_content = f.read()
         
         return jsonify({
