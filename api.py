@@ -8,10 +8,7 @@ from selenium.webdriver.common.by import By
 import time
 from dotenv import load_dotenv
 import os
-from pydantic_ai import Agent
 import logfire
-import asyncio
-from concurrent.futures import ThreadPoolExecutor
 
 
 # Load environment variables from .env file
@@ -85,73 +82,6 @@ def main():
     except Exception as e:
         print(f"Login failed: {str(e)}")
 
-def invoke_llm(assignments_content):
-    # Clean and format the assignments content
-    cleaned_content = "\n".join([
-        line.strip() for line in assignments_content.splitlines() 
-        if line.strip() and not line.startswith("Timestamp:")
-    ])
-    
-    # Prepare the prompt
-    prompt = f"""
-    Analyze this student's assignments and grades. Focus on:
-    1. Missing assignments (marked with 'M - Missing' or a '0.00')
-    2. Class grades below 80%
-    3. Class grades above 80%
-    
-    Here is the data:
-    {cleaned_content[:10000]}
-    
-    Provide the following sections:
-    - Summary of Key Issues
-        -- Number of missing assignments plus those with a 0.00 grade
-        -- Number of class assignment grades that are less than 80%
-    - Missing Assignments
-        -- Table of all of the missing assignments with formatted spacing to look like a table
-        -- Course Name
-        -- Assignment
-        -- Due Date
-        -- Sort by Due Date from the newest date to the oldest date
-    - Low Class Grades (Below 80%) 
-        -- Table of overall course grades below 80% with formatted spacing to look like a table
-        -- Course Name
-        -- Current Grade
-        -- Sort by Current Grade from lowest to highest
-    - Other Class Grades (Above 80%) 
-        -- Table of overall course grade above 80% with formatted spacing to look like a table
-        -- Course Name
-        -- Current Grade
-        -- Sort by Current Grade from lowest to highest
-    
-    Keep the response concise and focused.
-    The response should be in HTML format that includes headings, bullet points, 
-    and tables with headings so that it is easy to read.
-    Only include the analysis within the start <html> and end <html> tags.
-    """
-    system_prompt = """
-    You are an expert in evaluating the grades and performance of high school students.
-    """
-    
-    try:
-        # Create a new event loop in the current thread
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        # Create agent and run synchronously
-        agent = Agent('gemini-2.0-flash-thinking-exp-01-21', system_prompt=system_prompt, model_settings={'temperature': 0.0})
-        
-        # Run in the event loop
-        result = loop.run_until_complete(agent.run(prompt))
-        loop.close()
-        
-        return result.data
-    except Exception as e:
-        return f"Error processing assignments: {str(e)}"
-    finally:
-        try:
-            loop.close()
-        except:
-            pass
 
 def send_email(analysis):
     """Sends the analysis via email with HTML content to multiple recipients."""
@@ -199,21 +129,10 @@ def check_grades():
         with open('assignments.txt', 'r') as f:
             assignments_content = f.read()
         
-        print("Sending assignments to LLM for analysis...")
-        try:
-            analysis = invoke_llm(assignments_content)
-            print("\nAnalysis complete!")
-            
-            return jsonify({
-                "status": "success",
-                "analysis": analysis
-            }), 200
-            
-        except Exception as e:
-            return jsonify({
-                "status": "error",
-                "message": f"LLM analysis error: {str(e)}"
-            }), 500
+        return jsonify({
+            "status": "success",
+            "assignments": assignments_content
+        }), 200
         
     except Exception as e:
         return jsonify({
