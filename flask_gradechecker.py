@@ -1,4 +1,4 @@
-import click as click_cli
+from flask import Flask, jsonify
 import sys
 import smtplib
 import time
@@ -167,21 +167,17 @@ def send_email(analysis):
     except Exception as e:
         print(f"Error sending email: {e}")
 
-@click_cli.command()
-@click_cli.option('--local', is_flag=True, help='Use local assignments.txt instead of scraping website')
-@click_cli.option('--email', is_flag=True, help='Send analysis via email')
-def cli(local, email):
-    """Grade Checker Application"""
+app = Flask(__name__)
+
+@app.route('/check-grades', methods=['GET'])
+def check_grades():
     try:
         print("Starting grade check...")
         
-        if not local:
-            print("Scraping website for assignments...")
-            credentials = get_credentials()
-            login_to_website(**credentials)
-            print("Website scraping complete.")
-        else:
-            print("Using local assignments file...")
+        print("Scraping website for assignments...")
+        credentials = get_credentials()
+        login_to_website(**credentials)
+        print("Website scraping complete.")
         
         # Read the saved assignments
         print("Reading assignments file...")
@@ -192,20 +188,20 @@ def cli(local, email):
         try:
             analysis = invoke_llm(assignments_content)
             print("\nAnalysis complete!")
-            print(analysis)
             
-            if email:
-                print("\nSending analysis via email...")
-                send_email(analysis)
+            return jsonify({
+                "status": "success",
+                "analysis": analysis
+            }), 200
             
-            sys.exit(0)  # Exit successfully
         except Exception as e:
-            print(f"\nError during LLM analysis: {str(e)}")
-            sys.exit(1)  # Exit with error
+            return jsonify({
+                "status": "error",
+                "message": f"LLM analysis error: {str(e)}"
+            }), 500
         
     except Exception as e:
-        print(f"\nError: {str(e)}")
-        sys.exit(1)  # Exit with error
-
-if __name__ == "__main__":
-    cli()
+        return jsonify({
+            "status": "error", 
+            "message": f"Error: {str(e)}"
+        }), 500
