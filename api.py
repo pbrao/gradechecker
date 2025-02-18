@@ -94,7 +94,6 @@ def check_grades():
             assignments_content = f.read()
         
         return jsonify({
-            "status": "success",
             "assignments": assignments_content
         }), 200
         
