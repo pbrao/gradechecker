@@ -8,7 +8,6 @@ from selenium.webdriver.common.by import By
 import time
 from dotenv import load_dotenv
 import os
-from litellm import completion
 from pydantic_ai import Agent
 import logfire
 
