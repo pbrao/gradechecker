@@ -4,14 +4,10 @@ from helium import S, start_chrome, wait_until, write, click as helium_click, Li
 from selenium.webdriver.common.by import By
 from dotenv import load_dotenv
 import os
-import logfire
 
 
 # Load environment variables from .env file
 load_dotenv()
-
-# Add logfire logging
-logfire.configure()
 
 
 def save_assignments_to_file(content):
