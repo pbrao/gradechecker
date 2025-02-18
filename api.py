@@ -1,11 +1,9 @@
 from flask import Flask, jsonify
-import sys
 import smtplib
 import time
 from email.mime.text import MIMEText
 from helium import S, start_chrome, wait_until, write, click as helium_click, Link, kill_browser, get_driver
 from selenium.webdriver.common.by import By
-import time
 from dotenv import load_dotenv
 import os
 import logfire
