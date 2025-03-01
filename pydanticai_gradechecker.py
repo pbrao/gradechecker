@@ -281,7 +281,7 @@ def cli(local, email, schedule):
                     logfire.info("Sending analysis via email...")
                     send_email(analysis)
                 
-                sys.exit(0)  # Exit successfully
+                #sys.exit(0)  # Exit successfully
             except Exception as e:
                 print(f"\nError during LLM analysis: {str(e)}")
                 logfire.error(f"LLM analysis failed: {str(e)}")
