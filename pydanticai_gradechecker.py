@@ -2,7 +2,7 @@ import click as click_cli
 import sys
 import smtplib
 import time
-import schedule
+import schedule as scheduler
 import time as schedule_time  # Rename to avoid conflict with existing time import
 from email.mime.text import MIMEText
 from helium import S, start_chrome, wait_until, write, click as helium_click, Link, kill_browser, get_driver
@@ -233,14 +233,14 @@ def cli(local, email, schedule):
     if schedule:
         print("Setting up scheduled job to run daily at 3:00 PM...")
         logfire.info("Setting up scheduled job to run daily at 3:00 PM...")
-        schedule.every().day.at("15:00").do(scheduled_job)
+        scheduler.every().day.at("15:00").do(scheduled_job)
         print(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         logfire.info(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         print("Press Ctrl+C to exit")
         
         try:
             while True:
-                schedule.run_pending()
+                scheduler.run_pending()
                 schedule_time.sleep(60)  # Check every minute
         except KeyboardInterrupt:
             print("Scheduler stopped by user")
