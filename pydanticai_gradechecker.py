@@ -293,4 +293,5 @@ def cli(local, email, schedule):
             sys.exit(1)  # Exit with error
 
 if __name__ == "__main__":
-    cli()
+    with logfire.span("grade_checker_application"):
+        cli()
