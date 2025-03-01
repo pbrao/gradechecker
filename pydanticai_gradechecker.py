@@ -90,6 +90,7 @@ def login_to_website(url, username, password):
         # Switch back to default content
         get_driver().switch_to.default_content()
         kill_browser()
+        logfire.info("Cleaning up and killing the browser")
 
 
 def main():
@@ -233,7 +234,8 @@ def cli(local, email, schedule):
     if schedule:
         print("Setting up scheduled job to run daily at 3:00 PM...")
         logfire.info("Setting up scheduled job to run daily at 3:00 PM...")
-        scheduler.every().day.at("15:00").do(scheduled_job)
+        #scheduler.every().day.at("15:00").do(scheduled_job)
+        scheduler.every(5).minutes.do(scheduled_job)
         print(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         logfire.info(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         print("Press Ctrl+C to exit")
