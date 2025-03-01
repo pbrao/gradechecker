@@ -22,35 +22,39 @@ logfire.configure()
 
 
 def save_assignments_to_file(content):
-    logfire.info("Saving assignments to file")
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-    with open('assignments.txt', 'w', encoding='utf-8') as f:
-        f.write(f"Timestamp: {timestamp}\n\n")
-        for line in content:
-            f.write(line + "\n")
-    logfire.info("Assignments saved to file")
+    with logfire.span("save_assignments_to_file"):
+        logfire.info("Saving assignments to file")
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        with open('assignments.txt', 'w', encoding='utf-8') as f:
+            f.write(f"Timestamp: {timestamp}\n\n")
+            for line in content:
+                f.write(line + "\n")
+        logfire.info("Assignments saved to file")
 
 def extract_assignments():
-    logfire.info("Extracting assignments from website")
-    # Get all content from the iframe
-    elements = get_driver().find_elements(By.CLASS_NAME, "AssignmentClass")
-    assignments = [element.text for element in elements]
-    logfire.info(f"Extracted {len(assignments)} assignments")
-    return assignments
+    with logfire.span("extract_assignments"):
+        logfire.info("Extracting assignments from website")
+        # Get all content from the iframe
+        elements = get_driver().find_elements(By.CLASS_NAME, "AssignmentClass")
+        assignments = [element.text for element in elements]
+        logfire.info(f"Extracted {len(assignments)} assignments")
+        return assignments
 
 def get_credentials():
-    logfire.info("Getting credentials from environment variables")
-    credentials = {
-        "url": os.getenv('HAC_URL'),
-        "username": os.getenv('HAC_USERNAME'),
-        "password": os.getenv('HAC_PASSWORD')
-    }
-    logfire.info("Credentials retrieved")
-    return credentials
+    with logfire.span("get_credentials"):
+        logfire.info("Getting credentials from environment variables")
+        credentials = {
+            "url": os.getenv('HAC_URL'),
+            "username": os.getenv('HAC_USERNAME'),
+            "password": os.getenv('HAC_PASSWORD')
+        }
+        logfire.info("Credentials retrieved")
+        return credentials
 
 
 def login_to_website(url, username, password):
-    logfire.info(f"Logging in to website: {url}")
+    with logfire.span("login_to_website"):
+        logfire.info(f"Logging in to website: {url}")
     # Start browser and go to URL
     start_chrome(url, headless=True)
     
@@ -89,7 +93,8 @@ def login_to_website(url, username, password):
 
 
 def main():
-    logfire.info("Starting Website Login CLI")
+    with logfire.span("main"):
+        logfire.info("Starting Website Login CLI")
     credentials = get_credentials()
     
     try:
@@ -101,7 +106,9 @@ def main():
         logfire.error(f"Login failed: {str(e)}")
 
 def invoke_llm(assignments_content):
-    # Clean and format the assignments content
+    with logfire.span("invoke_llm"):
+        logfire.info("Invoking LLM for analysis")
+        # Clean and format the assignments content
     cleaned_content = "\n".join([
         line.strip() for line in assignments_content.splitlines() 
         if line.strip() and not line.startswith("Timestamp:")
@@ -156,7 +163,8 @@ def invoke_llm(assignments_content):
         return f"Error processing assignments: {str(e)}"
 
 def send_email(analysis):
-    logfire.info("Sending email with analysis")
+    with logfire.span("send_email"):
+        logfire.info("Sending email with analysis")
     """Sends the analysis via email with HTML content to multiple recipients."""
     sender_email = os.getenv('GMAIL_SENDER')
     sender_password = os.getenv('GMAIL_APP_PASSWORD')
@@ -188,7 +196,8 @@ def send_email(analysis):
         print(f"Error sending email: {e}")
 
 def scheduled_job():
-    logfire.info("Running scheduled job")
+    with logfire.span("scheduled_job"):
+        logfire.info("Running scheduled job")
     """Function to be scheduled to run daily at 3:00 PM"""
     print(f"Running scheduled job at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     try:
@@ -218,7 +227,8 @@ def scheduled_job():
 @click_cli.option('--email', is_flag=True, help='Send analysis via email')
 @click_cli.option('--schedule', is_flag=True, help='Schedule to run daily at 3:00 PM')
 def cli(local, email, schedule):
-    logfire.info("Starting CLI")
+    with logfire.span("cli"):
+        logfire.info("Starting CLI")
     """Grade Checker Application"""
     if schedule:
         print("Setting up scheduled job to run daily at 3:00 PM...")
