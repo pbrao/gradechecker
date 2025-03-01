@@ -243,7 +243,7 @@ def cli(local, email, schedule):
         try:
             while True:
                 scheduler.run_pending()
-                schedule_time.sleep(60)  # Check every minute
+                schedule_time.sleep(120)  # Check every minute
         except KeyboardInterrupt:
             print("Scheduler stopped by user")
             logfire.info("Scheduler stopped by user")
