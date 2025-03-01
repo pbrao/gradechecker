@@ -2,6 +2,8 @@ import click as click_cli
 import sys
 import smtplib
 import time
+import schedule
+import time as schedule_time  # Rename to avoid conflict with existing time import
 from email.mime.text import MIMEText
 from helium import S, start_chrome, wait_until, write, click as helium_click, Link, kill_browser, get_driver
 from selenium.webdriver.common.by import By
@@ -167,45 +169,86 @@ def send_email(analysis):
     except Exception as e:
         print(f"Error sending email: {e}")
 
-@click_cli.command()
-@click_cli.option('--local', is_flag=True, help='Use local assignments.txt instead of scraping website')
-@click_cli.option('--email', is_flag=True, help='Send analysis via email')
-def cli(local, email):
-    """Grade Checker Application"""
+def scheduled_job():
+    """Function to be scheduled to run daily at 3:00 PM"""
+    print(f"Running scheduled job at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     try:
-        print("Starting grade check...")
-        
-        if not local:
-            print("Scraping website for assignments...")
-            credentials = get_credentials()
-            login_to_website(**credentials)
-            print("Website scraping complete.")
-        else:
-            print("Using local assignments file...")
+        # Get credentials and login
+        credentials = get_credentials()
+        login_to_website(**credentials)
         
         # Read the saved assignments
-        print("Reading assignments file...")
         with open('assignments.txt', 'r') as f:
             assignments_content = f.read()
         
-        print("Sending assignments to LLM for analysis...")
-        try:
-            analysis = invoke_llm(assignments_content)
-            print("\nAnalysis complete!")
-            print(analysis)
-            
-            if email:
-                print("\nSending analysis via email...")
-                send_email(analysis)
-            
-            sys.exit(0)  # Exit successfully
-        except Exception as e:
-            print(f"\nError during LLM analysis: {str(e)}")
-            sys.exit(1)  # Exit with error
+        # Analyze assignments
+        analysis = invoke_llm(assignments_content)
+        print("\nAnalysis complete!")
         
+        # Send email with analysis
+        send_email(analysis)
+        
+        print("Scheduled job completed successfully")
     except Exception as e:
-        print(f"\nError: {str(e)}")
-        sys.exit(1)  # Exit with error
+        print(f"Error in scheduled job: {str(e)}")
+        logfire.error("Scheduled job failed", error=str(e))
+
+@click_cli.command()
+@click_cli.option('--local', is_flag=True, help='Use local assignments.txt instead of scraping website')
+@click_cli.option('--email', is_flag=True, help='Send analysis via email')
+@click_cli.option('--schedule', is_flag=True, help='Schedule to run daily at 3:00 PM')
+def cli(local, email, schedule):
+    """Grade Checker Application"""
+    if schedule:
+        print("Setting up scheduled job to run daily at 3:00 PM...")
+        schedule.every().day.at("15:00").do(scheduled_job)
+        print(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print("Press Ctrl+C to exit")
+        
+        try:
+            while True:
+                schedule.run_pending()
+                schedule_time.sleep(60)  # Check every minute
+        except KeyboardInterrupt:
+            print("Scheduler stopped by user")
+            sys.exit(0)
+    else:
+        try:
+            print("Starting grade check...")
+            
+            if not local:
+                print("Scraping website for assignments...")
+                credentials = get_credentials()
+                login_to_website(**credentials)
+                print("Website scraping complete.")
+            else:
+                print("Using local assignments file...")
+            
+            # Read the saved assignments
+            print("Reading assignments file...")
+            with open('assignments.txt', 'r') as f:
+                assignments_content = f.read()
+            
+            print("Sending assignments to LLM for analysis...")
+            try:
+                analysis = invoke_llm(assignments_content)
+                print("\nAnalysis complete!")
+                print(analysis)
+                
+                if email:
+                    print("\nSending analysis via email...")
+                    send_email(analysis)
+                
+                sys.exit(0)  # Exit successfully
+            except Exception as e:
+                print(f"\nError during LLM analysis: {str(e)}")
+                logfire.error("LLM analysis failed", error=str(e))
+                sys.exit(1)  # Exit with error
+            
+        except Exception as e:
+            print(f"\nError: {str(e)}")
+            logfire.error("Grade check failed", error=str(e))
+            sys.exit(1)  # Exit with error
 
 if __name__ == "__main__":
     cli()
