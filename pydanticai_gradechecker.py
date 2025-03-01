@@ -22,26 +22,35 @@ logfire.configure()
 
 
 def save_assignments_to_file(content):
+    logfire.info("Saving assignments to file")
     timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
     with open('assignments.txt', 'w', encoding='utf-8') as f:
         f.write(f"Timestamp: {timestamp}\n\n")
         for line in content:
             f.write(line + "\n")
+    logfire.info("Assignments saved to file")
 
 def extract_assignments():
+    logfire.info("Extracting assignments from website")
     # Get all content from the iframe
     elements = get_driver().find_elements(By.CLASS_NAME, "AssignmentClass")
-    return [element.text for element in elements]
+    assignments = [element.text for element in elements]
+    logfire.info(f"Extracted {len(assignments)} assignments")
+    return assignments
 
 def get_credentials():
-    return {
+    logfire.info("Getting credentials from environment variables")
+    credentials = {
         "url": os.getenv('HAC_URL'),
         "username": os.getenv('HAC_USERNAME'),
         "password": os.getenv('HAC_PASSWORD')
     }
+    logfire.info("Credentials retrieved")
+    return credentials
 
 
 def login_to_website(url, username, password):
+    logfire.info(f"Logging in to website: {url}")
     # Start browser and go to URL
     start_chrome(url, headless=True)
     
@@ -68,7 +77,11 @@ def login_to_website(url, username, password):
         # Extract and save assignments
         assignments = extract_assignments()
         save_assignments_to_file(assignments)
+        logfire.info("Login and assignment extraction successful")
         
+    except Exception as e:
+        logfire.error(f"Login or assignment extraction failed: {str(e)}")
+        raise
     finally:
         # Switch back to default content
         get_driver().switch_to.default_content()
@@ -76,14 +89,16 @@ def login_to_website(url, username, password):
 
 
 def main():
-    print("Website Login CLI")
+    logfire.info("Starting Website Login CLI")
     credentials = get_credentials()
     
     try:
         login_to_website(**credentials)
         print("Login successful!")
+        logfire.info("Login successful")
     except Exception as e:
         print(f"Login failed: {str(e)}")
+        logfire.error(f"Login failed: {str(e)}")
 
 def invoke_llm(assignments_content):
     # Clean and format the assignments content
@@ -141,6 +156,7 @@ def invoke_llm(assignments_content):
         return f"Error processing assignments: {str(e)}"
 
 def send_email(analysis):
+    logfire.info("Sending email with analysis")
     """Sends the analysis via email with HTML content to multiple recipients."""
     sender_email = os.getenv('GMAIL_SENDER')
     sender_password = os.getenv('GMAIL_APP_PASSWORD')
@@ -166,10 +182,13 @@ def send_email(analysis):
                 msg.as_string()
             )
             print(f"Email sent successfully to {len(receiver_emails)} recipients!")
+            logfire.info(f"Email sent successfully to {len(receiver_emails)} recipients!")
     except Exception as e:
+        logfire.error(f"Error sending email: {e}")
         print(f"Error sending email: {e}")
 
 def scheduled_job():
+    logfire.info("Running scheduled job")
     """Function to be scheduled to run daily at 3:00 PM"""
     print(f"Running scheduled job at {time.strftime('%Y-%m-%d %H:%M:%S')}")
     try:
@@ -189,20 +208,24 @@ def scheduled_job():
         send_email(analysis)
         
         print("Scheduled job completed successfully")
+        logfire.info("Scheduled job completed successfully")
     except Exception as e:
+        logfire.error(f"Error in scheduled job: {str(e)}")
         print(f"Error in scheduled job: {str(e)}")
-        logfire.error("Scheduled job failed", error=str(e))
 
 @click_cli.command()
 @click_cli.option('--local', is_flag=True, help='Use local assignments.txt instead of scraping website')
 @click_cli.option('--email', is_flag=True, help='Send analysis via email')
 @click_cli.option('--schedule', is_flag=True, help='Schedule to run daily at 3:00 PM')
 def cli(local, email, schedule):
+    logfire.info("Starting CLI")
     """Grade Checker Application"""
     if schedule:
         print("Setting up scheduled job to run daily at 3:00 PM...")
+        logfire.info("Setting up scheduled job to run daily at 3:00 PM...")
         schedule.every().day.at("15:00").do(scheduled_job)
         print(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logfire.info(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         print("Press Ctrl+C to exit")
         
         try:
@@ -211,43 +234,52 @@ def cli(local, email, schedule):
                 schedule_time.sleep(60)  # Check every minute
         except KeyboardInterrupt:
             print("Scheduler stopped by user")
+            logfire.info("Scheduler stopped by user")
             sys.exit(0)
     else:
         try:
             print("Starting grade check...")
+            logfire.info("Starting grade check...")
             
             if not local:
                 print("Scraping website for assignments...")
+                logfire.info("Scraping website for assignments...")
                 credentials = get_credentials()
                 login_to_website(**credentials)
                 print("Website scraping complete.")
+                logfire.info("Website scraping complete.")
             else:
                 print("Using local assignments file...")
+                logfire.info("Using local assignments file...")
             
             # Read the saved assignments
             print("Reading assignments file...")
+            logfire.info("Reading assignments file...")
             with open('assignments.txt', 'r') as f:
                 assignments_content = f.read()
             
             print("Sending assignments to LLM for analysis...")
+            logfire.info("Sending assignments to LLM for analysis...")
             try:
                 analysis = invoke_llm(assignments_content)
                 print("\nAnalysis complete!")
                 print(analysis)
+                logfire.info("Analysis complete!")
                 
                 if email:
                     print("\nSending analysis via email...")
+                    logfire.info("Sending analysis via email...")
                     send_email(analysis)
                 
                 sys.exit(0)  # Exit successfully
             except Exception as e:
                 print(f"\nError during LLM analysis: {str(e)}")
-                logfire.error("LLM analysis failed", error=str(e))
+                logfire.error(f"LLM analysis failed: {str(e)}")
                 sys.exit(1)  # Exit with error
             
         except Exception as e:
             print(f"\nError: {str(e)}")
-            logfire.error("Grade check failed", error=str(e))
+            logfire.error(f"Grade check failed: {str(e)}")
             sys.exit(1)  # Exit with error
 
 if __name__ == "__main__":
