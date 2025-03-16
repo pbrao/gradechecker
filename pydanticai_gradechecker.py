@@ -135,6 +135,12 @@ def invoke_llm(assignments_content):
         -- Assignment
         -- Due Date
         -- Sort by Due Date from the newest date to the oldest date
+    - Assignments Below 80%
+        -- Table of all of assignments with a grade below 80%
+        -- Course Name
+        -- Assignment
+        -- Due Date
+        -- Sort by assignment grade from lowest to highest
     - Low Class Grades (Below 80%) 
         -- Table of overall course grades below 80% with formatted spacing to look like a table
         -- Course Name
@@ -149,6 +155,7 @@ def invoke_llm(assignments_content):
     Keep the response concise and focused.
     The response should be in HTML format that includes headings, bullet points, 
     and tables with headings so that it is easy to read.
+    Make the HTML so that it displays correctly on a mobile device
     Only include the analysis within the start <html> and end <html> tags.
     """
     system_prompt = """
@@ -234,8 +241,8 @@ def cli(local, email, schedule):
     if schedule:
         print("Setting up scheduled job to run daily at 3:00 PM...")
         logfire.info("Setting up scheduled job to run daily at 3:00 PM...")
-        #scheduler.every().day.at("15:00").do(scheduled_job)
-        scheduler.every(5).minutes.do(scheduled_job)
+        scheduler.every().day.at("15:00").do(scheduled_job)
+        #scheduler.every(5).minutes.do(scheduled_job)
         print(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         logfire.info(f"Job scheduled. Current time: {time.strftime('%Y-%m-%d %H:%M:%S')}")
         print("Press Ctrl+C to exit")
@@ -243,7 +250,7 @@ def cli(local, email, schedule):
         try:
             while True:
                 scheduler.run_pending()
-                schedule_time.sleep(120)  # Check every minute
+                schedule_time.sleep(60)  # Check every 60 seconds 
         except KeyboardInterrupt:
             print("Scheduler stopped by user")
             logfire.info("Scheduler stopped by user")
