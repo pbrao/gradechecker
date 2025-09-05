@@ -480,36 +480,37 @@ The following diagram illustrates the GCP deployment architecture for this proje
 
 ```mermaid
 flowchart LR
-  subgraph Dev[Developer / CI]
-    Podman[Podman build-and-push.sh]
-    CloudBuild[Cloud Build (optional)]
+  subgraph Developer_CI
+    Podman["Podman build-and-push.sh"]
+    CloudBuild["Cloud Build (optional)"]
   end
 
-  subgraph ArtifactRegistry[Artifact Registry]
-    AR[(gradechecker-repo)]
+  subgraph Artifact_Registry
+    AR["gradechecker-repo"]
   end
 
   Podman --> AR
   CloudBuild --> AR
 
-  subgraph CloudRun[Cloud Run Service: gradechecker]
-    server[basic_server.py / HTTP]
-    worker[pydanticai_gradechecker.py / scraper + LLM + email]
+  subgraph Cloud_Run_Service
+    server["basic_server.py / HTTP"]
+    worker["pydanticai_gradechecker.py / scraper + LLM + email"]
   end
 
-  subgraph Scheduler[Cloud Scheduler]
-    sched[Daily Trigger (3:00 PM America/Chicago)]
+  subgraph Cloud_Scheduler
+    sched["Daily Trigger (3:00 PM America/Chicago)"]
   end
 
-  sched -->|"POST /run-grade-check\nX-Auth-Token: SERVICE_AUTH_TOKEN"| server
-  server -->|"subprocess"| worker
+  sched -->| "POST /run-grade-check\nX-Auth-Token: SERVICE_AUTH_TOKEN" | server
+  server -->| "subprocess" | worker
 
-  worker -->|"Headless Chrome"| HAC[(Home Access Center)]
-  worker -->|"Gemini API"| Gemini[(Gemini)]
-  worker -->|"SMTP 465"| Gmail[(Gmail)]
-  worker -. optional .-> Logfire[(Logfire)]:::opt
+  worker -->| "Headless Chrome" | HAC["Home Access Center"]
+  worker -->| "Gemini API" | Gemini["Gemini"]
+  worker -->| "SMTP 465" | Gmail["Gmail"]
+  worker -. optional .-> Logfire["Logfire"]
 
-  classDef opt fill:#eee,stroke:#999,stroke-dasharray: 3 3
+  classDef opt fill:#eee,stroke:#999,stroke-dasharray: 3 3;
+  class Logfire opt;
 ```
 
 Notes
@@ -519,7 +520,3 @@ Notes
 - Scheduling: Cloud Scheduler posts to the Cloud Run URL at the configured cron time. The request includes the X-Auth-Token header that must match SERVICE_AUTH_TOKEN configured in the service environment; see [infra/main.tf](infra/main.tf:88).
 - Configuration: Environment variables are set by the service spec in [infra/main.tf](infra/main.tf:42) and documented in this README.
 - Security: Keep REQUIRE_AUTH=true and set a strong SERVICE_AUTH_TOKEN in production; consider replacing public invoker IAM with Cloud Scheduler OIDC if stricter security is required.
-
-```
-
-```
