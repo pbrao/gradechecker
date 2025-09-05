@@ -471,3 +471,55 @@ Notes
 - State: OpenTofu uses the same state model; by default a local state file (terraform.tfstate) is created under infra/. Configure a remote backend (e.g., GCS) if desired.
 - Security: Consider removing the allUsers invoker IAM and using Cloud Scheduler OIDC for strict invocation. The app still enforces SERVICE_AUTH_TOKEN at the HTTP layer.
 - Stability: Chrome flags such as DISABLE_DEV_SHM_USAGE are available as variables in [infra/main.tf](infra/main.tf:132).
+
+---
+
+GCP Architecture Diagram
+
+The following diagram illustrates the GCP deployment architecture for this project, including Artifact Registry, Cloud Run, and Cloud Scheduler triggering the service on a schedule. It also shows the runtime subprocess that performs scraping, LLM analysis, and email.
+
+```mermaid
+flowchart LR
+  subgraph Dev[Developer / CI]
+    Podman[Podman build-and-push.sh]
+    CloudBuild[Cloud Build (optional)]
+  end
+
+  subgraph ArtifactRegistry[Artifact Registry]
+    AR[(gradechecker-repo)]
+  end
+
+  Podman --> AR
+  CloudBuild --> AR
+
+  subgraph CloudRun[Cloud Run Service: gradechecker]
+    server[basic_server.py / HTTP]
+    worker[pydanticai_gradechecker.py / scraper + LLM + email]
+  end
+
+  subgraph Scheduler[Cloud Scheduler]
+    sched[Daily Trigger (3:00 PM America/Chicago)]
+  end
+
+  sched -->|"POST /run-grade-check\nX-Auth-Token: SERVICE_AUTH_TOKEN"| server
+  server -->|"subprocess"| worker
+
+  worker -->|"Headless Chrome"| HAC[(Home Access Center)]
+  worker -->|"Gemini API"| Gemini[(Gemini)]
+  worker -->|"SMTP 465"| Gmail[(Gmail)]
+  worker -. optional .-> Logfire[(Logfire)]:::opt
+
+  classDef opt fill:#eee,stroke:#999,stroke-dasharray: 3 3
+```
+
+Notes
+
+- Image Source: Container images are built locally with Podman via [build-and-push.sh](build-and-push.sh:1) or by Cloud Build using [cloudbuild.yaml](cloudbuild.yaml:1), then pushed to Artifact Registry.
+- Runtime: Cloud Run runs [basic_server.py](basic_server.py:1), which exposes HTTP endpoints and launches [pydanticai_gradechecker.py](pydanticai_gradechecker.py:1) as a subprocess for scraping, analysis, and email.
+- Scheduling: Cloud Scheduler posts to the Cloud Run URL at the configured cron time. The request includes the X-Auth-Token header that must match SERVICE_AUTH_TOKEN configured in the service environment; see [infra/main.tf](infra/main.tf:88).
+- Configuration: Environment variables are set by the service spec in [infra/main.tf](infra/main.tf:42) and documented in this README.
+- Security: Keep REQUIRE_AUTH=true and set a strong SERVICE_AUTH_TOKEN in production; consider replacing public invoker IAM with Cloud Scheduler OIDC if stricter security is required.
+
+```
+
+```
