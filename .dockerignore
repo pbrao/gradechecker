@@ -5,5 +5,15 @@ __pycache__
 .Python
 env
 venv
-.env
 *.log
+.git
+.gitignore
+README.md
+infra/
+docker_upload/
+build-and-push.sh
+cloudbuild.yaml
+.logfire/
+.env
+.env.*
+*.env

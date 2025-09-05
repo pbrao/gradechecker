@@ -1,4 +1,0 @@
-flask==3.0.0
-selenium==4.18.1
-helium==3.2.8
-python-dotenv==1.0.1
