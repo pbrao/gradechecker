@@ -501,12 +501,12 @@ flowchart LR
     sched["Daily Trigger (3:00 PM America/Chicago)"]
   end
 
-  sched -->| "POST /run-grade-check\nX-Auth-Token: SERVICE_AUTH_TOKEN" | server
-  server -->| "subprocess" | worker
+  sched -->|POST /run-grade-check (X-Auth-Token)| server
+  server -->|subprocess| worker
 
-  worker -->| "Headless Chrome" | HAC["Home Access Center"]
-  worker -->| "Gemini API" | Gemini["Gemini"]
-  worker -->| "SMTP 465" | Gmail["Gmail"]
+  worker -->|Headless Chrome| HAC["Home Access Center"]
+  worker -->|Gemini API| Gemini["Gemini"]
+  worker -->|SMTP 465| Gmail["Gmail"]
   worker -. optional .-> Logfire["Logfire"]
 
   classDef opt fill:#eee,stroke:#999,stroke-dasharray: 3 3;
